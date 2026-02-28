@@ -1,0 +1,314 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Shopify Session Storage
+model Session {
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String
+  userId        BigInt?
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+}
+
+// Store Settings
+model Store {
+  id                    String   @id @default(cuid())
+  shop                  String   @unique
+  name                  String?
+  email                 String?
+  plan                  String   @default("free")
+  aiCredits             Int      @default(100)
+  seoScore              Int      @default(0)
+  lastScanAt            DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  seoScans              SEOScan[]
+  blogPosts             BlogPost[]
+  brokenLinks           BrokenLink[]
+  imageOptimizations    ImageOptimization[]
+  metaTags              MetaTag[]
+  structuredData        StructuredData[]
+  keywordResearch       KeywordResearch[]
+  speedOptimizations    SpeedOptimization[]
+  altTextOptimizations  AltTextOptimization[]
+}
+
+// SEO Scan Results
+model SEOScan {
+  id              String   @id @default(cuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  overallScore    Int      @default(0)
+  contentScore    Int      @default(0)
+  performanceScore Int     @default(0)
+  accessibilityScore Int   @default(0)
+
+  criticalIssues  Int      @default(0)
+  improvements    Int      @default(0)
+  goodResults     Int      @default(0)
+
+  issues          Json     // Array of SEO issues found
+  crawledPages    Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([storeId])
+}
+
+// Blog Posts (AI Generated)
+model BlogPost {
+  id              String   @id @default(cuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  title           String
+  content         String   @db.Text
+  excerpt         String?  @db.Text
+  slug            String
+  metaTitle       String?
+  metaDescription String?  @db.Text
+  primaryKeyword  String?
+  secondaryKeywords String[] // Array of keywords
+
+  status          String   @default("draft") // draft, published, scheduled
+  scheduledAt     DateTime?
+  publishedAt     DateTime?
+
+  shopifyBlogId   String?
+  shopifyArticleId String?
+
+  seoScore        Int      @default(0)
+  readabilityScore Int     @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([status])
+}
+
+// Broken Links
+model BrokenLink {
+  id              String   @id @default(cuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  sourceUrl       String
+  brokenUrl       String
+  statusCode      Int
+  pageType        String   // product, collection, blog, page
+
+  redirectUrl     String?
+  isResolved      Boolean  @default(false)
+  resolvedAt      DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([isResolved])
+}
+
+// Image Optimizations
+model ImageOptimization {
+  id              String   @id @default(cuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  imageUrl        String
+  originalSize    Int      // bytes
+  optimizedSize   Int?     // bytes
+  savedBytes      Int?
+  savedPercent    Float?
+
+  pageType        String   // product, collection, blog
+  resourceId      String?  // Shopify resource ID
+
+  status          String   @default("pending") // pending, optimized, failed
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([status])
+}
+
+// Meta Tags
+model MetaTag {
+  id              String   @id @default(cuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  resourceType    String   // product, collection, page, blog, article
+  resourceId      String   // Shopify resource ID
+  resourceHandle  String?
+
+  metaTitle       String?
+  metaDescription String?  @db.Text
+  originalTitle   String?
+  originalDescription String? @db.Text
+  isOptimized     Boolean  @default(false)
+  seoScore        Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([storeId, resourceType, resourceId])
+  @@index([storeId])
+  @@index([resourceType])
+}
+
+// Structured Data (JSON-LD)
+model StructuredData {
+  id              String   @id @default(cuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  type            String   // Product, Organization, LocalBusiness, Article, Breadcrumb, FAQ
+  resourceType    String?  // product, collection, page, blog
+  resourceId      String?  // Shopify resource ID
+
+  jsonLd          Json     // The actual JSON-LD data
+  isEnabled       Boolean  @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([type])
+}
+
+// Keyword Research
+model KeywordResearch {
+  id              String   @id @default(cuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  seedKeyword     String
+  country         String   @default("US")
+  language        String   @default("en")
+
+  keywords        Json     // Array of keyword data with volume, difficulty, etc.
+  topicClusters   Json?    // Topic cluster suggestions
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([storeId])
+}
+
+// Speed Optimizations
+model SpeedOptimization {
+  id              String   @id @default(cuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  mobileScore     Int      @default(0)
+  desktopScore    Int      @default(0)
+
+  loadingSpeed    Float?   // seconds
+  totalBlockingTime Float? // ms
+  visualStability Float?   // CLS score
+  interactivity   Float?   // ms
+
+  // Settings
+  lazyLoadEnabled Boolean  @default(false)
+  minificationEnabled Boolean @default(false)
+  instantPageEnabled Boolean @default(false)
+  criticalCssEnabled Boolean @default(false)
+
+  speedMode       String   @default("basic") // basic, turbo, rocket, custom
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([storeId])
+}
+
+// Alt Text Optimizations
+model AltTextOptimization {
+  id              String   @id @default(cuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  imageId         String   // Shopify image ID
+  resourceType    String   // product, collection, blog
+  resourceId      String
+
+  originalAltText String?
+  optimizedAltText String?
+
+  isOptimized     Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([storeId, imageId])
+  @@index([storeId])
+}
+
+// Sitemap Settings
+model SitemapSettings {
+  id              String   @id @default(cuid())
+  storeId         String   @unique
+
+  includeProducts Boolean  @default(true)
+  includeCollections Boolean @default(true)
+  includePages    Boolean  @default(true)
+  includeBlogs    Boolean  @default(true)
+
+  productFrequency String  @default("daily")
+  collectionFrequency String @default("weekly")
+  pageFrequency   String   @default("monthly")
+  blogFrequency   String   @default("daily")
+
+  lastGeneratedAt DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Local Business Info (for structured data)
+model LocalBusiness {
+  id              String   @id @default(cuid())
+  storeId         String   @unique
+
+  businessName    String?
+  businessType    String?  // Restaurant, Store, LocalBusiness, etc.
+  telephone       String?
+  priceRange      String?
+
+  streetAddress   String?
+  addressLocality String?
+  addressRegion   String?
+  postalCode      String?
+  addressCountry  String?
+
+  latitude        Float?
+  longitude       Float?
+
+  businessHours   Json?    // Array of opening hours
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

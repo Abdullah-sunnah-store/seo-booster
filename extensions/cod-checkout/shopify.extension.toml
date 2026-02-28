@@ -3,4 +3,5 @@ api_version = "2024-07"
 [[extensions]]
 name = "COD Checkout Button"
 handle = "cod-checkout"
+uid = "a0ae9906-c009-2ad7-8425-20c8b03f747bc6afc2f9"
 type = "theme"

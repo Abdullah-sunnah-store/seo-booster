@@ -1,4 +1,4 @@
-# SEO Booster - AI SEO and Blog Post
+# Cracktab COD - AI SEO and Blog Post
 
 A comprehensive Shopify app for SEO optimization, AI-powered blog post generation, and site performance improvement.
 
@@ -34,8 +34,8 @@ A comprehensive Shopify app for SEO optimization, AI-powered blog post generatio
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/seo-booster-ai.git
-cd seo-booster-ai
+git clone https://github.com/yourusername/cracktab-cod.git
+cd cracktab-cod
 ```
 
 2. Install dependencies:
@@ -54,7 +54,7 @@ SHOPIFY_API_KEY=your_shopify_api_key
 SHOPIFY_API_SECRET=your_shopify_api_secret
 SCOPES=read_products,write_products,read_content,write_content,read_themes,write_themes
 SHOPIFY_APP_URL=https://your-app-url.com
-DATABASE_URL=postgresql://user:password@localhost:5432/seo_booster
+DATABASE_URL=postgresql://user:password@localhost:5432/cracktab_cod
 OPENAI_API_KEY=your_openai_api_key
 SESSION_SECRET=your_session_secret
 ```
@@ -98,10 +98,10 @@ npm run dev
 
 ```bash
 # Build the Docker image
-docker build -t seo-booster-ai .
+docker build -t cracktab-cod .
 
 # Run the container
-docker run -p 3000:3000 --env-file .env seo-booster-ai
+docker run -p 3000:3000 --env-file .env cracktab-cod
 ```
 
 ## Project Structure

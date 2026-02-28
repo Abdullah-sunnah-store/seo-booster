@@ -1,8 +1,8 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "7d6846fb9f944b6701f6cc35b77eab6f"
-name = "Cracktab - SEO Booster"
-handle = "seo-booster-ai"
+name = "Cracktab - COD"
+handle = "cracktab-cod"
 application_url = "http://localhost:3000/app"
 embedded = true
 
@@ -16,11 +16,6 @@ redirect_urls = [
   "http://localhost:3000/auth/shopify/callback",
   "http://localhost:3000/api/auth/callback"
 ]
-
-[app_proxy]
-url = "http://localhost:3000/cod"
-subpath = "cod-checkout"
-prefix = "apps"
 
 [webhooks]
 api_version = "2024-07"

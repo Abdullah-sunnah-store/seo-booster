@@ -1,0 +1,6 @@
+api_version = "2024-07"
+
+[[extensions]]
+name = "COD Checkout Button"
+handle = "cod-checkout"
+type = "theme"

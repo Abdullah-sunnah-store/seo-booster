@@ -3,7 +3,7 @@
 client_id = "ab82f122718af01befbc08e3e96cc8c1"
 name = "Cracktab - SEO Booster"
 handle = "seo-booster-ai"
-application_url = "https://sea-turtle-app-sa8zg.ondigitalocean.app/app"
+application_url = "http://localhost:3000/app"
 embedded = true
 
 [access_scopes]
@@ -12,9 +12,9 @@ scopes = "read_products,write_products,read_content,write_content,read_themes,wr
 
 [auth]
 redirect_urls = [
-  "https://sea-turtle-app-sa8zg.ondigitalocean.app/auth/callback",
-  "https://sea-turtle-app-sa8zg.ondigitalocean.app/auth/shopify/callback",
-  "https://sea-turtle-app-sa8zg.ondigitalocean.app/api/auth/callback"
+  "http://localhost:3000/auth/callback",
+  "http://localhost:3000/auth/shopify/callback",
+  "http://localhost:3000/api/auth/callback"
 ]
 
 [webhooks]

@@ -15,9 +15,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   let body: {
     name?: string;
     phone?: string;
+    city?: string;
+    governorate?: string;
     address?: string;
     quantity?: number;
     variant_id?: string | number;
+    offer_price?: number; // total price in cents (optional, from offer selection)
   };
 
   try {
@@ -26,7 +29,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { name, phone, address, quantity, variant_id } = body;
+  const { name, phone, city, governorate, address, quantity, variant_id, offer_price } = body;
 
   if (!name || !phone || !address || !variant_id) {
     return json({ error: "Missing required fields" }, { status: 400 });
@@ -37,19 +40,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const lastName = nameParts.slice(1).join(" ") || "-";
   const qty = Math.max(1, parseInt(String(quantity)) || 1);
 
+  // If a custom offer price was selected, calculate per-unit price
+  const originalUnitPrice =
+    offer_price && offer_price > 0
+      ? (offer_price / 100 / qty).toFixed(2)
+      : null;
+
   try {
     // Step 1: Create draft order
     const draftRes = await admin.graphql(
       `#graphql
       mutation DraftOrderCreate($input: DraftOrderInput!) {
         draftOrderCreate(input: $input) {
-          draftOrder {
-            id
-          }
-          userErrors {
-            field
-            message
-          }
+          draftOrder { id }
+          userErrors { field message }
         }
       }`,
       {
@@ -59,6 +63,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
               {
                 variantId: `gid://shopify/ProductVariant/${variant_id}`,
                 quantity: qty,
+                ...(originalUnitPrice ? { originalUnitPrice } : {}),
               },
             ],
             shippingAddress: {
@@ -66,17 +71,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
               lastName,
               phone: String(phone),
               address1: String(address),
+              city: String(city || ""),
+              province: String(governorate || ""),
             },
             billingAddress: {
               firstName,
               lastName,
               phone: String(phone),
               address1: String(address),
+              city: String(city || ""),
+              province: String(governorate || ""),
             },
             note: "Cash on Delivery (COD)",
             tags: ["COD"],
             customAttributes: [
               { key: "Payment Method", value: "Cash on Delivery" },
+              ...(city ? [{ key: "City", value: String(city) }] : []),
+              ...(governorate ? [{ key: "Governorate", value: String(governorate) }] : []),
             ],
           },
         },
@@ -102,21 +113,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return json({ error: "Failed to create draft order" }, { status: 500 });
     }
 
-    // Step 2: Complete draft order → creates real order
+    // Step 2: Complete draft order → real order
     const completeRes = await admin.graphql(
       `#graphql
       mutation DraftOrderComplete($id: ID!) {
         draftOrderComplete(id: $id) {
           draftOrder {
-            order {
-              id
-              name
-            }
+            order { id name }
           }
-          userErrors {
-            field
-            message
-          }
+          userErrors { field message }
         }
       }`,
       { variables: { id: draftOrderId } }
@@ -131,15 +136,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       };
     };
 
-    const completeErrors =
-      completeData?.data?.draftOrderComplete?.userErrors ?? [];
+    const completeErrors = completeData?.data?.draftOrderComplete?.userErrors ?? [];
     if (completeErrors.length > 0) {
       return json({ error: completeErrors[0].message }, { status: 400 });
     }
 
-    const order =
-      completeData?.data?.draftOrderComplete?.draftOrder?.order;
-
+    const order = completeData?.data?.draftOrderComplete?.draftOrder?.order;
     if (!order) {
       return json({ error: "Failed to complete order" }, { status: 500 });
     }
@@ -147,9 +149,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return json({ success: true, orderName: order.name, orderId: order.id });
   } catch (err) {
     console.error("COD order error:", err);
-    return json(
-      { error: "Server error. Please try again." },
-      { status: 500 }
-    );
+    return json({ error: "Server error. Please try again." }, { status: 500 });
   }
 };

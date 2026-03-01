@@ -3,7 +3,6 @@
 <div
   class="cod-button-wrapper"
   data-variant-id="{{ product.selected_or_first_available_variant.id }}"
-  data-proxy-url="/apps/cod-checkout/order"
 >
   <button
     type="button"
@@ -30,13 +29,42 @@
       {% endif %}
       <div>
         <p class="cod-product-title">{{ product.title }}</p>
-        <p class="cod-product-price">{{ product.selected_or_first_available_variant.price | money }}</p>
+        <p class="cod-product-price" id="cod-price-display-{{ block.id }}">
+          {{ product.selected_or_first_available_variant.price | money }}
+        </p>
       </div>
     </div>
 
     <h2 class="cod-modal-title">{{ block.settings.modal_title }}</h2>
 
     <form class="cod-form" novalidate>
+
+      <!-- Quantity Offers (shown when offers are configured) -->
+      <div class="cod-offers-section" style="display:none;">
+        <p class="cod-offers-label">{{ block.settings.label_quantity }}</p>
+        <div class="cod-offers-grid"></div>
+      </div>
+
+      <!-- Simple qty stepper (fallback / no offers) -->
+      <div class="cod-qty-section">
+        <div class="cod-field">
+          <label>{{ block.settings.label_quantity }}</label>
+          <div class="cod-qty-control">
+            <button type="button" class="cod-qty-btn cod-qty-minus" aria-label="Decrease">&#8722;</button>
+            <input type="number" name="quantity" value="1" min="1" max="99" class="cod-qty-input" readonly>
+            <button type="button" class="cod-qty-btn cod-qty-plus" aria-label="Increase">&#43;</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total price summary -->
+      <div class="cod-total-row">
+        <span class="cod-total-label">{{ block.settings.label_total }}</span>
+        <span class="cod-total-price" id="cod-total-{{ block.id }}">
+          {{ product.selected_or_first_available_variant.price | money }}
+        </span>
+      </div>
+
       <div class="cod-field">
         <label>{{ block.settings.label_name }}</label>
         <input type="text" name="name" placeholder="{{ block.settings.placeholder_name }}" required autocomplete="name">
@@ -47,18 +75,20 @@
         <input type="tel" name="phone" placeholder="{{ block.settings.placeholder_phone }}" required autocomplete="tel">
       </div>
 
-      <div class="cod-field">
-        <label>{{ block.settings.label_address }}</label>
-        <textarea name="address" placeholder="{{ block.settings.placeholder_address }}" required rows="3" autocomplete="street-address"></textarea>
+      <div class="cod-field-row">
+        <div class="cod-field">
+          <label>{{ block.settings.label_governorate }}</label>
+          <input type="text" name="governorate" placeholder="{{ block.settings.placeholder_governorate }}" autocomplete="address-level1">
+        </div>
+        <div class="cod-field">
+          <label>{{ block.settings.label_city }}</label>
+          <input type="text" name="city" placeholder="{{ block.settings.placeholder_city }}" autocomplete="address-level2">
+        </div>
       </div>
 
       <div class="cod-field">
-        <label>{{ block.settings.label_quantity }}</label>
-        <div class="cod-qty-control">
-          <button type="button" class="cod-qty-btn cod-qty-minus" aria-label="Decrease quantity">&#8722;</button>
-          <input type="number" name="quantity" value="1" min="1" max="99" class="cod-qty-input" readonly>
-          <button type="button" class="cod-qty-btn cod-qty-plus" aria-label="Increase quantity">&#43;</button>
-        </div>
+        <label>{{ block.settings.label_address }}</label>
+        <textarea name="address" placeholder="{{ block.settings.placeholder_address }}" required rows="2" autocomplete="street-address"></textarea>
       </div>
 
       <p class="cod-error" role="alert"></p>
@@ -91,9 +121,12 @@
 <script>
   window.__COD__ = window.__COD__ || [];
   window.__COD__.push({
-    blockId: {{ block.id | json }},
-    proxyUrl: '/apps/cod-checkout/order',
-    variantId: {{ product.selected_or_first_available_variant.id | json }}
+    blockId:    {{ block.id | json }},
+    variantId:  {{ product.selected_or_first_available_variant.id | json }},
+    basePrice:  {{ product.selected_or_first_available_variant.price }},
+    moneyFormat: {{ shop.money_format | json }},
+    offersUrl:  '/apps/cod-checkout/offers',
+    orderUrl:   '/apps/cod-checkout/order'
   });
 </script>
 <script src="{{ 'cod-popup.js' | asset_url }}" defer></script>
@@ -103,118 +136,34 @@
   "name": "COD Checkout Button",
   "target": "section",
   "settings": [
-    {
-      "type": "header",
-      "content": "Button"
-    },
-    {
-      "type": "text",
-      "id": "button_text",
-      "label": "Button Text",
-      "default": "Order Now (COD)"
-    },
-    {
-      "type": "color",
-      "id": "button_color",
-      "label": "Button Color",
-      "default": "#e63946"
-    },
-    {
-      "type": "color",
-      "id": "button_text_color",
-      "label": "Button Text Color",
-      "default": "#ffffff"
-    },
-    {
-      "type": "header",
-      "content": "Popup"
-    },
-    {
-      "type": "text",
-      "id": "modal_title",
-      "label": "Modal Title",
-      "default": "Complete Your Order"
-    },
-    {
-      "type": "text",
-      "id": "submit_text",
-      "label": "Submit Button Text",
-      "default": "Confirm Order (COD)"
-    },
-    {
-      "type": "text",
-      "id": "loading_text",
-      "label": "Loading Text",
-      "default": "Placing your order..."
-    },
-    {
-      "type": "header",
-      "content": "Form Labels"
-    },
-    {
-      "type": "text",
-      "id": "label_name",
-      "label": "Name Label",
-      "default": "Full Name"
-    },
-    {
-      "type": "text",
-      "id": "placeholder_name",
-      "label": "Name Placeholder",
-      "default": "Enter your full name"
-    },
-    {
-      "type": "text",
-      "id": "label_phone",
-      "label": "Phone Label",
-      "default": "Phone Number"
-    },
-    {
-      "type": "text",
-      "id": "placeholder_phone",
-      "label": "Phone Placeholder",
-      "default": "Enter your phone number"
-    },
-    {
-      "type": "text",
-      "id": "label_address",
-      "label": "Address Label",
-      "default": "Delivery Address"
-    },
-    {
-      "type": "text",
-      "id": "placeholder_address",
-      "label": "Address Placeholder",
-      "default": "Enter your full delivery address"
-    },
-    {
-      "type": "text",
-      "id": "label_quantity",
-      "label": "Quantity Label",
-      "default": "Quantity"
-    },
-    {
-      "type": "header",
-      "content": "Success Message"
-    },
-    {
-      "type": "text",
-      "id": "success_title",
-      "label": "Success Title",
-      "default": "Order Placed Successfully!"
-    },
-    {
-      "type": "text",
-      "id": "success_message",
-      "label": "Success Message",
-      "default": "Thank you! Your order has been placed. We will contact you soon to confirm delivery."
-    },
-    {
-      "type": "text",
-      "id": "close_text",
-      "label": "Close Button Text",
-      "default": "Close"
-    }
+    { "type": "header", "content": "Button" },
+    { "type": "text",  "id": "button_text",       "label": "Button Text",       "default": "Order Now (COD)" },
+    { "type": "color", "id": "button_color",       "label": "Button Color",      "default": "#e63946" },
+    { "type": "color", "id": "button_text_color",  "label": "Button Text Color", "default": "#ffffff" },
+
+    { "type": "header", "content": "Popup" },
+    { "type": "text", "id": "modal_title",   "label": "Modal Title",        "default": "Complete Your Order" },
+    { "type": "text", "id": "submit_text",   "label": "Submit Button Text", "default": "Confirm Order (COD)" },
+    { "type": "text", "id": "loading_text",  "label": "Loading Text",       "default": "Placing your order..." },
+
+    { "type": "header", "content": "Form Labels" },
+    { "type": "text", "id": "label_quantity",          "label": "Quantity Label",          "default": "Select Package" },
+    { "type": "text", "id": "label_total",             "label": "Total Label",             "default": "Total:" },
+    { "type": "text", "id": "label_name",              "label": "Name Label",              "default": "Full Name" },
+    { "type": "text", "id": "placeholder_name",        "label": "Name Placeholder",        "default": "Enter your full name" },
+    { "type": "text", "id": "label_phone",             "label": "Phone Label",             "default": "Phone Number" },
+    { "type": "text", "id": "placeholder_phone",       "label": "Phone Placeholder",       "default": "Enter your phone number" },
+    { "type": "text", "id": "label_governorate",       "label": "Governorate Label",       "default": "Governorate" },
+    { "type": "text", "id": "placeholder_governorate", "label": "Governorate Placeholder", "default": "e.g. Cairo" },
+    { "type": "text", "id": "label_city",              "label": "City Label",              "default": "City" },
+    { "type": "text", "id": "placeholder_city",        "label": "City Placeholder",        "default": "e.g. Nasr City" },
+    { "type": "text", "id": "label_address",           "label": "Address Label",           "default": "Delivery Address" },
+    { "type": "text", "id": "placeholder_address",     "label": "Address Placeholder",     "default": "Street, building, floor..." },
+
+    { "type": "header", "content": "Success Message" },
+    { "type": "text", "id": "success_title",   "label": "Success Title",   "default": "Order Placed Successfully!" },
+    { "type": "text", "id": "success_message", "label": "Success Message", "default": "Thank you! We will contact you soon to confirm delivery." },
+    { "type": "text", "id": "close_text",      "label": "Close Button",    "default": "Close" }
   ]
 }
 {% endschema %}

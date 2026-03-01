@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Shopify Session Storage
 model Session {
   id            String    @id
   shop          String
@@ -24,4 +23,21 @@ model Session {
   locale        String?
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
+}
+
+model QuantityOffer {
+  id            String   @id @default(cuid())
+  shop          String
+  quantity      Int
+  label         String
+  badgeText     String?
+  discountType  String   @default("none") // none | percentage | fixed
+  discountValue Float    @default(0)
+  isDefault     Boolean  @default(false)
+  isEnabled     Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([shop])
 }
